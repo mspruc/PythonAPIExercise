@@ -12,9 +12,10 @@ class App(npyscreen.NPSAppManaged):
     def onStart(self):
         #add forms to the application
         self.addForm('MAIN', FirstForm, name="main")
-        print("app started")
  
 class FirstForm(npyscreen.ActionFormMinimal, npyscreen.FormWithMenus):
+
+    test = None
 
     def drawLine(self,text,relx,rely):
         self.add(npyscreen.TitleText, w_id="sun", name=text,editable = False, relx = relx,rely = rely)
@@ -33,14 +34,18 @@ class FirstForm(npyscreen.ActionFormMinimal, npyscreen.FormWithMenus):
             for i in range(len(list)):
                 if list[i][type] == typeName:
                     sortedJobs.append(list[i])
-        return sortedJobs
+            return sortedJobs
+        return list
+
+
+    
 
     def create(self):
-        #self.add(npyscreen.Checkbox, w_id="fullTime", name = "full time?")
-        self.add(npyscreen.TitleText, w_id="pgr", name= "Enter your preferred programming language: " )
+        self.add(npyscreen.FixedText, w_id="welcometxt",  value = "This is a jobsorter. Please insert your prefered jobvalues below. Good luck." )
+        self.add(npyscreen.Checkbox, w_id="fullTime", name = "full time?")
         self.add(npyscreen.TitleText, w_id="loc", name= "Enter your preferred location: " )
-        self.add(npyscreen.FixedText, w_id="asdawdd",  value = "Hey " )
-        test = self.add(npyscreen.ComboBox, w_id="sss", name= "test box")
+        self.add(npyscreen.FixedText, w_id="pgrtext",  value = "Choose your preferred langauge below:" )
+        self.test = self.add(npyscreen.ComboBox, w_id="pgr", name= "Enter your preferred programming language: ")
 
 
         ascii =    ("--------------------------------------------------------- -",
@@ -69,41 +74,44 @@ class FirstForm(npyscreen.ActionFormMinimal, npyscreen.FormWithMenus):
                     "'---------------------------------------------------------'"
                    )
 
-        for i in range(len(ascii)):
+        for i in range(3,len(ascii)):
             self.drawLine(ascii[i],60,i)
 
-        test.values = [i,len(ascii)]
+        self.test.values = ["java", "c++", "python"]
 
-
-        details = {
+        details = { #Check if we use
                 'pgr' : self.get_widget("pgr").value,
                 'loc' : self.get_widget("loc").value,
            }
 
-        print("buttons created")
+
 
 
     def on_ok(self):
-        print("user pressed ok button.")
-        print(self.get_widget("fullTime").value)
-        
+
+        #Get API json file
         resp = requests.get(url=url)
         resp = resp.json()
-        print(resp)
-
-        #print(len(resp))
-        #print(type(resp))
-        #print(resp[0]['type'])
 
         #Sort fulltime or not
         resp1 = self.fetchBy("fullTime", resp, 'type', "Full Time")
 
         #Sort by language
-        #resp2 = self.fetchBy("pgr", resp1, '')
+        if(self.get_widget("pgr").value):
+            sortedJobs = []
+            for i in range(len(resp1)):
+                if self.test.values[self.get_widget("pgr").value] in resp1[i]['description']:
+                    sortedJobs.append(resp1[i])
+            resp1 = sortedJobs
 
         #Sort by location
         resp1 = self.fetchBy("loc", resp1, 'location', self.get_widget("loc").value)
+
+
+        #Make it easier to read when printed, only gets company name
         resp1 = self.printJobs(resp1)
+
+        #Prints the jobs on screen
         npyscreen.notify_confirm(str(resp1), title="List of Companies you can apply jobs at", wrap=True, wide=True, editw=1)
 
 
